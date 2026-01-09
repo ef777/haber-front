@@ -2,6 +2,13 @@
 const nextConfig = {
   reactStrictMode: true,
   
+  // AMP validation'ı build'de devre dışı bırak
+  experimental: {
+    amp: {
+      skipValidation: true,
+    },
+  },
+  
   // Resim optimizasyonu
   images: {
     remotePatterns: [
