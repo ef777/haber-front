@@ -2,13 +2,14 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import Layout from '../../components/Layout';
 import Sidebar from '../../components/Sidebar';
 import ShareButtons from '../../components/ShareButtons';
 import IlgiliHaberler from '../../components/IlgiliHaberler';
+import CommentList from '../../components/CommentList';
 import {
   getHaberBySlug,
   getAllHaberSlugs,
@@ -17,6 +18,7 @@ import {
   getSiteAyarlari,
   getStrapiMedia,
   incrementOkunmaSayisi,
+  getYorumlar,
 } from '../../lib/strapi';
 import {
   getNewsArticleSchema,
@@ -27,18 +29,30 @@ const SITE_URL = process.env.SITE_URL || 'https://example.com';
 
 export default function HaberDetay({ haber, ilgiliHaberler, kategoriler, siteAyarlari }) {
   const router = useRouter();
+  const [yorumlar, setYorumlar] = useState([]);
+
+  useEffect(() => {
+    if (haber?.id) {
+      incrementOkunmaSayisi(haber.id);
+      // Yorumlari yukle
+      getYorumlar(haber.id).then(data => setYorumlar(data));
+    }
+  }, [haber?.id]);
+
+  const handleCommentAdded = () => {
+    // Yorumlari yeniden yukle
+    if (haber?.id) {
+      getYorumlar(haber.id).then(data => setYorumlar(data));
+    }
+  };
 
   if (router.isFallback) {
-    return <div className="text-center py-20">Yükleniyor...</div>;
+    return <div className="text-center py-20">Yukleniyor...</div>;
   }
 
   if (!haber) {
-    return <div className="text-center py-20">Haber bulunamadı</div>;
+    return <div className="text-center py-20">Haber bulunamadi</div>;
   }
-
-  useEffect(() => {
-    if (haber?.id) incrementOkunmaSayisi(haber.id);
-  }, [haber?.id]);
 
   const kapakResmi = getStrapiMedia(haber.kapak_resmi);
   const formattedDate = haber.yayin_tarihi
@@ -135,6 +149,15 @@ export default function HaberDetay({ haber, ilgiliHaberler, kategoriler, siteAya
             )}
 
             {ilgiliHaberler.length > 0 && <IlgiliHaberler haberler={ilgiliHaberler} />}
+
+            {/* Yorumlar */}
+            {haber.yorum_aktif !== false && (
+              <CommentList
+                yorumlar={yorumlar}
+                haberId={haber.id}
+                onCommentAdded={handleCommentAdded}
+              />
+            )}
           </article>
 
           <aside className="lg:col-span-1">
